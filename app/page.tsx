@@ -319,8 +319,8 @@ export default function AboutPage() {
           </Card>
 
           <Card
-            title="Commercial Automation–Agency Trade-off"
-            description="Automation is shown on the x-axis and agency on the y-axis. Point size represents narration support, and point color represents accuracy. When multiple tools share the same coordinate, they remain aligned to the original values and expand on hover for inspection."
+            title="Commercial Automation–Human Agency Trade-off"
+            description="Automation is shown on the x-axis and human agency on the y-axis. Point size represents narration support, and point color represents accuracy. When multiple tools share the same coordinate, they remain aligned to the original values and expand inward on hover for inspection."
           >
             <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-slate-600">
               <div className="flex items-center gap-2">
@@ -343,7 +343,7 @@ export default function AboutPage() {
 
             <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
+                <ScatterChart margin={{ top: 20, right: 28, bottom: 24, left: 18 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis
                     type="number"
@@ -358,7 +358,7 @@ export default function AboutPage() {
                   <YAxis
                     type="number"
                     dataKey="agency"
-                    name="Agency"
+                    name="Human Agency"
                     domain={[0, 4]}
                     ticks={[0, 1, 2, 3, 4]}
                     tick={{ fontSize: 12, fill: "#475569" }}
@@ -414,7 +414,41 @@ export default function AboutPage() {
                         );
                       }
 
-                      const spreadRadius = 20;
+                      const nearRight = payload.automation >= 3.5;
+                      const nearLeft = payload.automation <= 0.5;
+                      const nearTop = payload.agency >= 3.5;
+                      const nearBottom = payload.agency <= 0.5;
+
+                      const spreadRadius = 18;
+
+                      let centerAngle = 0;
+                      let useArc = false;
+
+                      if (nearRight && nearTop) {
+                        centerAngle = (5 * Math.PI) / 4;
+                        useArc = true;
+                      } else if (nearRight && nearBottom) {
+                        centerAngle = (3 * Math.PI) / 4;
+                        useArc = true;
+                      } else if (nearLeft && nearTop) {
+                        centerAngle = (7 * Math.PI) / 4;
+                        useArc = true;
+                      } else if (nearLeft && nearBottom) {
+                        centerAngle = Math.PI / 4;
+                        useArc = true;
+                      } else if (nearRight) {
+                        centerAngle = Math.PI;
+                        useArc = true;
+                      } else if (nearLeft) {
+                        centerAngle = 0;
+                        useArc = true;
+                      } else if (nearTop) {
+                        centerAngle = (3 * Math.PI) / 2;
+                        useArc = true;
+                      } else if (nearBottom) {
+                        centerAngle = Math.PI / 2;
+                        useArc = true;
+                      }
 
                       return (
                         <g
@@ -423,7 +457,20 @@ export default function AboutPage() {
                           style={{ cursor: "pointer" }}
                         >
                           {items.map((item: any, index: number) => {
-                            const angle = (Math.PI * 2 * index) / items.length;
+                            let angle = 0;
+
+                            if (useArc) {
+                              const arcSpan = Math.PI * 0.95;
+                              const start = centerAngle - arcSpan / 2;
+                              angle =
+                                items.length === 1
+                                  ? centerAngle
+                                  : start +
+                                    (arcSpan * index) / Math.max(items.length - 1, 1);
+                            } else {
+                              angle = (Math.PI * 2 * index) / items.length;
+                            }
+
                             const x = cx + Math.cos(angle) * spreadRadius;
                             const y = cy + Math.sin(angle) * spreadRadius;
                             const r = 5 + item.narration * 1.8;
@@ -454,7 +501,7 @@ export default function AboutPage() {
       <section className="pb-12">
         <div className="max-w-6xl mx-auto px-8">
           <Card
-            title="Academic Sub-dimension Heatmap Summary"
+            title="Academic Sub-dimension Summary"
             description="Number of academic prototypes supporting each coded sub-dimension."
           >
             <div className="overflow-x-auto">

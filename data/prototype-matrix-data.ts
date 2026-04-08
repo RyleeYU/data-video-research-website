@@ -17,7 +17,7 @@ export const prototypeGroups = [
     columns: ["Video", "Interactive", "Storyboard", "ScriptOnly"],
   },
   {
-    group: "Auto",
+    group: "Automation",
     columns: [
       "DataAnalysis",
       "ScriptGeneration",
@@ -27,7 +27,7 @@ export const prototypeGroups = [
     ],
   },
   {
-    group: "Human Control",
+    group: "Human Agency",
     columns: [
       "Editable Data",
       "Editable Script",
@@ -37,7 +37,7 @@ export const prototypeGroups = [
     ],
   },
   {
-    group: "Narrative",
+    group: "Narration",
     columns: [
       "Trend",
       "Peak",
@@ -49,7 +49,7 @@ export const prototypeGroups = [
     ],
   },
   {
-    group: "Data Grounding",
+    group: "Data Accuracy",
     columns: [
       "Explicit_DataBinding",
       "DataValidation",
