@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -10,7 +11,6 @@ import {
   ResponsiveContainer,
   ScatterChart,
   Scatter,
-  ZAxis,
   Cell,
 } from "recharts";
 import {
@@ -82,7 +82,7 @@ function CustomTooltip({
   );
 }
 
-function ScatterTooltip({
+function ClusterTooltip({
   active,
   payload,
 }: {
@@ -94,46 +94,71 @@ function ScatterTooltip({
   const d = payload[0].payload;
 
   return (
-    <div className="rounded-[14px] border border-slate-300 bg-white px-4 py-3 shadow-sm">
-      <p className="text-[12px] font-medium text-slate-700 mb-1">{d.title}</p>
-      <p className="text-[12px] text-slate-600">Automation: {d.automation}</p>
-      <p className="text-[12px] text-slate-600">Agency: {d.agency}</p>
-      <p className="text-[12px] text-slate-600">Narration: {d.narration}</p>
-      <p className="text-[12px] text-slate-600">Accuracy: {d.accuracy}</p>
+    <div className="rounded-[14px] border border-slate-300 bg-white px-4 py-3 shadow-sm max-w-[280px]">
+      <p className="text-[12px] font-medium text-slate-700 mb-1">
+        Automation {d.automation}, Agency {d.agency}
+      </p>
+      <p className="text-[12px] text-slate-600 mb-2">
+        {d.count} tool{d.count > 1 ? "s" : ""} at this coordinate
+      </p>
+      <div className="space-y-1">
+        {d.items.map((item: any) => (
+          <div key={item.title} className="text-[12px] text-slate-600">
+            {item.title}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 export default function AboutPage() {
-  const scatterKeyGroups = new Map<string, number>();
-  const jitterPattern = [
-    { dx: 0, dy: 0 },
-    { dx: -0.12, dy: 0.08 },
-    { dx: 0.12, dy: -0.08 },
-    { dx: -0.1, dy: -0.1 },
-    { dx: 0.1, dy: 0.1 },
-    { dx: -0.16, dy: 0 },
-    { dx: 0.16, dy: 0 },
-    { dx: 0, dy: 0.16 },
-    { dx: 0, dy: -0.16 },
-  ];
+  const [hoveredClusterKey, setHoveredClusterKey] = useState<string | null>(null);
 
-  const jitteredCommercialScatterData = commercialScatterData.map((item) => {
-    const key = `${item.automation}-${item.agency}`;
-    const count = scatterKeyGroups.get(key) ?? 0;
-    scatterKeyGroups.set(key, count + 1);
+  const commercialClusters = useMemo(() => {
+    const grouped = new Map<
+      string,
+      {
+        key: string;
+        automation: number;
+        agency: number;
+        items: typeof commercialScatterData;
+      }
+    >();
 
-    const pattern = jitterPattern[count % jitterPattern.length];
+    commercialScatterData.forEach((item) => {
+      const key = `${item.automation}-${item.agency}`;
+      const existing = grouped.get(key);
 
-    const plotAutomation = Number((item.automation + pattern.dx).toFixed(2));
-    const plotAgency = Number((item.agency + pattern.dy).toFixed(2));
+      if (existing) {
+        existing.items.push(item);
+      } else {
+        grouped.set(key, {
+          key,
+          automation: item.automation,
+          agency: item.agency,
+          items: [item],
+        });
+      }
+    });
 
-    return {
-      ...item,
-      plotAutomation,
-      plotAgency,
-    };
-  });
+    return Array.from(grouped.values()).map((group) => {
+      const avgNarration =
+        group.items.reduce((sum, item) => sum + item.narration, 0) /
+        group.items.length;
+
+      const avgAccuracy =
+        group.items.reduce((sum, item) => sum + item.accuracy, 0) /
+        group.items.length;
+
+      return {
+        ...group,
+        narrationAverage: Number(avgNarration.toFixed(2)),
+        accuracyAverage: Number(avgAccuracy.toFixed(2)),
+        count: group.items.length,
+      };
+    });
+  }, []);
 
   const dimensions = [
     { key: "automation", label: "Automation" },
@@ -295,7 +320,7 @@ export default function AboutPage() {
 
           <Card
             title="Commercial Automation–Agency Trade-off"
-            description="Automation is shown on the x-axis and agency on the y-axis. Point size represents narration support, and point color represents accuracy."
+            description="Automation is shown on the x-axis and agency on the y-axis. Point size represents narration support, and point color represents accuracy. When multiple tools share the same coordinate, they remain aligned to the original values and expand on hover for inspection."
           >
             <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-slate-600">
               <div className="flex items-center gap-2">
@@ -318,15 +343,13 @@ export default function AboutPage() {
 
             <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart
-                  margin={{ top: 20, right: 20, bottom: 20, left: 10 }}
-                >
+                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis
                     type="number"
-                    dataKey="plotAutomation"
+                    dataKey="automation"
                     name="Automation"
-                    domain={[-0.1, 4.1]}
+                    domain={[0, 4]}
                     ticks={[0, 1, 2, 3, 4]}
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#CBD5E1" }}
@@ -334,26 +357,93 @@ export default function AboutPage() {
                   />
                   <YAxis
                     type="number"
-                    dataKey="plotAgency"
+                    dataKey="agency"
                     name="Agency"
-                    domain={[-0.1, 4.1]}
+                    domain={[0, 4]}
                     ticks={[0, 1, 2, 3, 4]}
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#CBD5E1" }}
                     tickLine={{ stroke: "#CBD5E1" }}
                   />
-                  <ZAxis type="number" dataKey="size" range={[60, 320]} />
-                  <Tooltip content={<ScatterTooltip />} />
-                  <Scatter data={jitteredCommercialScatterData}>
-                    {jitteredCommercialScatterData.map((entry, index) => (
-                      <Cell
-                        key={index}
-                        fill={accuracyColor(entry.accuracy)}
-                        stroke="#ffffff"
-                        strokeWidth={1.5}
-                      />
-                    ))}
-                  </Scatter>
+                  <Tooltip content={<ClusterTooltip />} />
+                  <Scatter
+                    data={commercialClusters}
+                    shape={(props: any) => {
+                      const { cx, cy, payload } = props;
+                      const isHovered = hoveredClusterKey === payload.key;
+                      const items = payload.items;
+
+                      if (!isHovered || items.length === 1) {
+                        const radius =
+                          items.length === 1
+                            ? 6 + items[0].narration * 2.2
+                            : 7 + Math.min(items.length, 4);
+
+                        const fill =
+                          items.length === 1
+                            ? accuracyColor(items[0].accuracy)
+                            : accuracyColor(Math.round(payload.accuracyAverage));
+
+                        return (
+                          <g
+                            onMouseEnter={() => setHoveredClusterKey(payload.key)}
+                            onMouseLeave={() => setHoveredClusterKey(null)}
+                            style={{ cursor: "pointer" }}
+                          >
+                            <circle
+                              cx={cx}
+                              cy={cy}
+                              r={radius}
+                              fill={fill}
+                              stroke="#ffffff"
+                              strokeWidth={1.5}
+                            />
+                            {items.length > 1 && (
+                              <text
+                                x={cx}
+                                y={cy + 4}
+                                textAnchor="middle"
+                                fontSize="10"
+                                fill="#ffffff"
+                                fontWeight="600"
+                              >
+                                {items.length}
+                              </text>
+                            )}
+                          </g>
+                        );
+                      }
+
+                      const spreadRadius = 20;
+
+                      return (
+                        <g
+                          onMouseEnter={() => setHoveredClusterKey(payload.key)}
+                          onMouseLeave={() => setHoveredClusterKey(null)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          {items.map((item: any, index: number) => {
+                            const angle = (Math.PI * 2 * index) / items.length;
+                            const x = cx + Math.cos(angle) * spreadRadius;
+                            const y = cy + Math.sin(angle) * spreadRadius;
+                            const r = 5 + item.narration * 1.8;
+
+                            return (
+                              <circle
+                                key={item.title}
+                                cx={x}
+                                cy={y}
+                                r={r}
+                                fill={accuracyColor(item.accuracy)}
+                                stroke="#ffffff"
+                                strokeWidth={1.5}
+                              />
+                            );
+                          })}
+                        </g>
+                      );
+                    }}
+                  />
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
