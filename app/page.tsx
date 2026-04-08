@@ -12,7 +12,6 @@ import {
   Scatter,
   ZAxis,
   Cell,
-  Legend,
 } from "recharts";
 import {
   academicGroupCoverage,
@@ -106,9 +105,6 @@ function ScatterTooltip({
 }
 
 export default function AboutPage() {
-  // Academic + commercial overview data already imported.
-
-  // Jitter commercial scatter points so tools with identical coordinates do not overlap completely.
   const scatterKeyGroups = new Map<string, number>();
   const jitterPattern = [
     { dx: 0, dy: 0 },
@@ -129,14 +125,22 @@ export default function AboutPage() {
 
     const pattern = jitterPattern[count % jitterPattern.length];
 
+    const plotAutomation = Math.max(
+      0,
+      Math.min(4, Number((item.automation + pattern.dx).toFixed(2)))
+    );
+    const plotAgency = Math.max(
+      0,
+      Math.min(4, Number((item.agency + pattern.dy).toFixed(2)))
+    );
+
     return {
       ...item,
-      plotAutomation: Number((item.automation + pattern.dx).toFixed(2)),
-      plotAgency: Number((item.agency + pattern.dy).toFixed(2)),
+      plotAutomation,
+      plotAgency,
     };
   });
 
-  // Build score distribution summary for commercial tools.
   const dimensions = [
     { key: "automation", label: "Automation" },
     { key: "agency", label: "Agency" },
@@ -248,16 +252,17 @@ export default function AboutPage() {
             title="Academic Coding Coverage by Group"
             description="Total coded presences across the six academic coding groups."
           >
-            <div className="h-[320px]">
+            <div className="h-[340px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={academicGroupCoverage}
-                  margin={{ top: 8, right: 10, left: -18, bottom: 0 }}
+                  margin={{ top: 8, right: 10, left: -10, bottom: 24 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis
                     dataKey="group"
-                    tick={{ fontSize: 12, fill: "#475569" }}
+                    interval={0}
+                    tick={{ fontSize: 11, fill: "#475569" }}
                     axisLine={{ stroke: "#CBD5E1" }}
                     tickLine={{ stroke: "#CBD5E1" }}
                   />
@@ -297,8 +302,27 @@ export default function AboutPage() {
 
           <Card
             title="Commercial Automation–Agency Trade-off"
-            description="Automation on the x-axis and agency on the y-axis. Points with identical coordinates are slightly offset for visibility. Point size reflects narration, and color reflects accuracy."
+            description="Automation is shown on the x-axis and agency on the y-axis. Point size represents narration support, and point color represents accuracy."
           >
+            <div className="mb-3 flex flex-wrap items-center gap-4 text-[12px] text-slate-600">
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-3 w-3 rounded-full bg-[#4E6A8C]" />
+                <span>Higher accuracy</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-3 w-3 rounded-full bg-[#BFD5D8]" />
+                <span>Lower accuracy</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2.5 w-2.5 rounded-full border border-slate-400" />
+                <span>Smaller point = lower narration</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-4.5 w-4.5 rounded-full border border-slate-400" />
+                <span>Larger point = higher narration</span>
+              </div>
+            </div>
+
             <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart
@@ -310,6 +334,8 @@ export default function AboutPage() {
                     dataKey="plotAutomation"
                     name="Automation"
                     domain={[0, 4]}
+                    ticks={[0, 1, 2, 3, 4]}
+                    allowDataOverflow
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#CBD5E1" }}
                     tickLine={{ stroke: "#CBD5E1" }}
@@ -319,6 +345,8 @@ export default function AboutPage() {
                     dataKey="plotAgency"
                     name="Agency"
                     domain={[0, 4]}
+                    ticks={[0, 1, 2, 3, 4]}
+                    allowDataOverflow
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#CBD5E1" }}
                     tickLine={{ stroke: "#CBD5E1" }}
@@ -422,7 +450,6 @@ export default function AboutPage() {
                     tickLine={{ stroke: "#CBD5E1" }}
                   />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: "12px" }} />
                   <Bar dataKey="score0" stackId="a" name="Score 0" fill={scoreFill(0)} />
                   <Bar dataKey="score1" stackId="a" name="Score 1" fill={scoreFill(1)} />
                   <Bar dataKey="score2" stackId="a" name="Score 2" fill={scoreFill(2)} />
