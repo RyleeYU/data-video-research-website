@@ -414,39 +414,48 @@ export default function AboutPage() {
                         );
                       }
 
-                      const nearRight = payload.automation >= 3.5;
-                      const nearLeft = payload.automation <= 0.5;
-                      const nearTop = payload.agency >= 3.5;
-                      const nearBottom = payload.agency <= 0.5;
+                      const nearRight = payload.automation >= 3;
+                      const nearLeft = payload.automation <= 1;
+                      const nearTop = payload.agency >= 3;
+                      const nearBottom = payload.agency <= 1;
 
-                      const spreadRadius = 18;
+                      const spreadRadius = 16;
 
                       let centerAngle = 0;
                       let useArc = false;
+                      let arcSpan = Math.PI * 0.9;
 
                       if (nearRight && nearTop) {
                         centerAngle = (5 * Math.PI) / 4;
+                        arcSpan = Math.PI * 0.75;
                         useArc = true;
                       } else if (nearRight && nearBottom) {
                         centerAngle = (3 * Math.PI) / 4;
+                        arcSpan = Math.PI * 0.75;
                         useArc = true;
                       } else if (nearLeft && nearTop) {
                         centerAngle = (7 * Math.PI) / 4;
+                        arcSpan = Math.PI * 0.75;
                         useArc = true;
                       } else if (nearLeft && nearBottom) {
                         centerAngle = Math.PI / 4;
+                        arcSpan = Math.PI * 0.75;
                         useArc = true;
                       } else if (nearRight) {
                         centerAngle = Math.PI;
+                        arcSpan = Math.PI * 0.8;
                         useArc = true;
                       } else if (nearLeft) {
                         centerAngle = 0;
+                        arcSpan = Math.PI * 0.8;
                         useArc = true;
                       } else if (nearTop) {
                         centerAngle = (3 * Math.PI) / 2;
+                        arcSpan = Math.PI * 0.65;
                         useArc = true;
                       } else if (nearBottom) {
                         centerAngle = Math.PI / 2;
+                        arcSpan = Math.PI * 0.65;
                         useArc = true;
                       }
 
@@ -460,7 +469,6 @@ export default function AboutPage() {
                             let angle = 0;
 
                             if (useArc) {
-                              const arcSpan = Math.PI * 0.95;
                               const start = centerAngle - arcSpan / 2;
                               angle =
                                 items.length === 1
