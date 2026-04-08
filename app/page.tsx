@@ -82,29 +82,47 @@ function CustomTooltip({
   );
 }
 
-type ClusterItem = (typeof commercialScatterData)[number];
+function ClusterTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: any }>;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
 
-type ClusterDatum = {
-  key: string;
-  automation: number;
-  agency: number;
-  items: ClusterItem[];
-  narrationAverage: number;
-  accuracyAverage: number;
-  count: number;
-};
+  const d = payload[0].payload;
+
+  return (
+    <div className="rounded-[14px] border border-slate-300 bg-white px-4 py-3 shadow-sm max-w-[280px]">
+      <p className="text-[12px] font-medium text-slate-700 mb-1">
+        Automation {d.automation}, Agency {d.agency}
+      </p>
+      <p className="text-[12px] text-slate-600 mb-2">
+        {d.count} tool{d.count > 1 ? "s" : ""} at this coordinate
+      </p>
+      <div className="space-y-1">
+        {d.items.map((item: any) => (
+          <div key={item.title} className="text-[12px] text-slate-600">
+            {item.title}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function AboutPage() {
   const [hoveredClusterKey, setHoveredClusterKey] = useState<string | null>(null);
 
-  const commercialClusters = useMemo<ClusterDatum[]>(() => {
+  const commercialClusters = useMemo(() => {
     const grouped = new Map<
       string,
       {
         key: string;
         automation: number;
         agency: number;
-        items: ClusterItem[];
+        items: typeof commercialScatterData;
       }
     >();
 
@@ -141,9 +159,6 @@ export default function AboutPage() {
       };
     });
   }, []);
-
-  const hoveredCluster =
-    commercialClusters.find((cluster) => cluster.key === hoveredClusterKey) ?? null;
 
   const dimensions = [
     { key: "automation", label: "Automation" },
@@ -305,7 +320,7 @@ export default function AboutPage() {
 
           <Card
             title="Commercial Automation–Human Agency Trade-off"
-            description="Automation is shown on the x-axis and human agency on the y-axis. Point size represents narration support, and point color represents accuracy. When multiple tools share the same coordinate, they remain aligned to the original values. Hovering reveals a separate expansion panel rather than shifting the points themselves."
+            description="Automation is shown on the x-axis and human agency on the y-axis. Point size represents narration support, and point color represents accuracy. When multiple tools share the same coordinate, they remain aligned to the original values and expand inward on hover for inspection."
           >
             <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-slate-600">
               <div className="flex items-center gap-2">
@@ -326,40 +341,39 @@ export default function AboutPage() {
               </div>
             </div>
 
-            <div className="relative">
-              <div className="h-[320px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart
-                    margin={{ top: 20, right: 28, bottom: 24, left: 18 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis
-                      type="number"
-                      dataKey="automation"
-                      name="Automation"
-                      domain={[0, 4]}
-                      ticks={[0, 1, 2, 3, 4]}
-                      tick={{ fontSize: 12, fill: "#475569" }}
-                      axisLine={{ stroke: "#CBD5E1" }}
-                      tickLine={{ stroke: "#CBD5E1" }}
-                    />
-                    <YAxis
-                      type="number"
-                      dataKey="agency"
-                      name="Human Agency"
-                      domain={[0, 4]}
-                      ticks={[0, 1, 2, 3, 4]}
-                      tick={{ fontSize: 12, fill: "#475569" }}
-                      axisLine={{ stroke: "#CBD5E1" }}
-                      tickLine={{ stroke: "#CBD5E1" }}
-                    />
-                    <Tooltip cursor={false} content={<></>} />
-                    <Scatter
-                      data={commercialClusters}
-                      shape={(props: any) => {
-                        const { cx, cy, payload } = props;
-                        const items = payload.items;
+            <div className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={{ top: 20, right: 28, bottom: 24, left: 18 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis
+                    type="number"
+                    dataKey="automation"
+                    name="Automation"
+                    domain={[0, 4]}
+                    ticks={[0, 1, 2, 3, 4]}
+                    tick={{ fontSize: 12, fill: "#475569" }}
+                    axisLine={{ stroke: "#CBD5E1" }}
+                    tickLine={{ stroke: "#CBD5E1" }}
+                  />
+                  <YAxis
+                    type="number"
+                    dataKey="agency"
+                    name="Human Agency"
+                    domain={[0, 4]}
+                    ticks={[0, 1, 2, 3, 4]}
+                    tick={{ fontSize: 12, fill: "#475569" }}
+                    axisLine={{ stroke: "#CBD5E1" }}
+                    tickLine={{ stroke: "#CBD5E1" }}
+                  />
+                  <Tooltip content={<ClusterTooltip />} />
+                  <Scatter
+                    data={commercialClusters}
+                    shape={(props: any) => {
+                      const { cx, cy, payload } = props;
+                      const isHovered = hoveredClusterKey === payload.key;
+                      const items = payload.items;
 
+                      if (!isHovered || items.length === 1) {
                         const radius =
                           items.length === 1
                             ? 6 + items[0].narration * 2.2
@@ -373,9 +387,7 @@ export default function AboutPage() {
                         return (
                           <g
                             onMouseEnter={() => setHoveredClusterKey(payload.key)}
-                            onMouseLeave={() => setHoveredClusterKey((current) =>
-                              current === payload.key ? null : current
-                            )}
+                            onMouseLeave={() => setHoveredClusterKey(null)}
                             style={{ cursor: "pointer" }}
                           >
                             <circle
@@ -400,54 +412,107 @@ export default function AboutPage() {
                             )}
                           </g>
                         );
-                      }}
-                    />
-                  </ScatterChart>
-                </ResponsiveContainer>
-              </div>
+                      }
 
-              {hoveredCluster && hoveredCluster.count > 1 && (
-                <div
-                  className="absolute right-3 top-3 w-[250px] rounded-[14px] border border-slate-300 bg-white/95 backdrop-blur px-4 py-3 shadow-sm"
-                  onMouseEnter={() => setHoveredClusterKey(hoveredCluster.key)}
-                  onMouseLeave={() => setHoveredClusterKey(null)}
-                >
-                  <p className="text-[12px] font-medium text-slate-700 mb-1">
-                    Automation {hoveredCluster.automation}, Human Agency{" "}
-                    {hoveredCluster.agency}
-                  </p>
-                  <p className="text-[12px] text-slate-600 mb-3">
-                    {hoveredCluster.count} tools at this coordinate
-                  </p>
+                      const cornerRight = payload.automation >= 3.5;
+                      const cornerLeft = payload.automation <= 0.5;
+                      const cornerTop = payload.agency >= 3.5;
+                      const cornerBottom = payload.agency <= 0.5;
 
-                  <div className="space-y-2">
-                    {hoveredCluster.items.map((item) => (
-                      <div
-                        key={item.title}
-                        className="flex items-start gap-2 rounded-[10px] bg-[#F8FAFB] px-2.5 py-2"
-                      >
-                        <span
-                          className="mt-0.5 inline-block rounded-full border border-white"
-                          style={{
-                            width: `${10 + item.narration * 4}px`,
-                            height: `${10 + item.narration * 4}px`,
-                            backgroundColor: accuracyColor(item.accuracy),
-                            minWidth: `${10 + item.narration * 4}px`,
-                          }}
-                        />
-                        <div className="min-w-0">
-                          <div className="text-[12px] leading-[1.3] text-slate-700">
-                            {item.title}
-                          </div>
-                          <div className="mt-1 text-[11px] text-slate-500">
-                            Narration {item.narration} · Accuracy {item.accuracy}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      const edgeRight = payload.automation >= 3;
+                      const edgeLeft = payload.automation <= 1;
+                      const edgeTop = payload.agency >= 3;
+                      const edgeBottom = payload.agency <= 1;
+
+                      let centerAngle = 0;
+                      let useArc = false;
+                      let arcSpan = Math.PI * 0.75;
+                      let spreadRadius = 16;
+
+                      if (cornerRight && cornerTop) {
+                        centerAngle = (5 * Math.PI) / 4;
+                        arcSpan = Math.PI * 0.65;
+                        spreadRadius = 14;
+                        useArc = true;
+                      } else if (cornerRight && cornerBottom) {
+                        centerAngle = (3 * Math.PI) / 4;
+                        arcSpan = Math.PI * 0.65;
+                        spreadRadius = 14;
+                        useArc = true;
+                      } else if (cornerLeft && cornerTop) {
+                        centerAngle = (7 * Math.PI) / 4;
+                        arcSpan = Math.PI * 0.65;
+                        spreadRadius = 14;
+                        useArc = true;
+                      } else if (cornerLeft && cornerBottom) {
+                        centerAngle = Math.PI / 4;
+                        arcSpan = Math.PI * 0.65;
+                        spreadRadius = 14;
+                        useArc = true;
+                      } else if (edgeTop) {
+                        centerAngle = Math.PI / 2;
+                        arcSpan = Math.PI * 0.5;
+                        spreadRadius = 14;
+                        useArc = true;
+                      } else if (edgeBottom) {
+                        centerAngle = (3 * Math.PI) / 2;
+                        arcSpan = Math.PI * 0.5;
+                        spreadRadius = 14;
+                        useArc = true;
+                      } else if (edgeRight) {
+                        centerAngle = Math.PI;
+                        arcSpan = Math.PI * 0.7;
+                        spreadRadius = 15;
+                        useArc = true;
+                      } else if (edgeLeft) {
+                        centerAngle = 0;
+                        arcSpan = Math.PI * 0.7;
+                        spreadRadius = 15;
+                        useArc = true;
+                      }
+
+                      return (
+                        <g
+                          onMouseEnter={() => setHoveredClusterKey(payload.key)}
+                          onMouseLeave={() => setHoveredClusterKey(null)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          {items.map((item: any, index: number) => {
+                            let angle = 0;
+
+                            if (useArc) {
+                              const start = centerAngle - arcSpan / 2;
+                              angle =
+                                items.length === 1
+                                  ? centerAngle
+                                  : start +
+                                    (arcSpan * index) / Math.max(items.length - 1, 1);
+                            } else {
+                              angle = (Math.PI * 2 * index) / items.length;
+                            }
+
+                            const x = cx + Math.cos(angle) * spreadRadius;
+                            const y = cy + Math.sin(angle) * spreadRadius;
+                            const r = 5 + item.narration * 1.8;
+
+                            return (
+                              <circle
+                                key={item.title}
+                                cx={x}
+                                cy={y}
+                                r={r}
+                                fill={accuracyColor(item.accuracy)}
+                                stroke="#ffffff"
+                                strokeWidth={1.5}
+                              />
+                            );
+                          })}
+                        </g>
+                      );
+                    }}
+                  />
+                </ScatterChart>
+              </ResponsiveContainer>
             </div>
           </Card>
         </div>
