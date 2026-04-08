@@ -22,19 +22,19 @@ import {
 } from "../data/visual-summary-data";
 
 function accuracyColor(score: number) {
-  if (score === 4) return "#4E6A8C";
-  if (score === 3) return "#6F879F";
-  if (score === 2) return "#8FB9BE";
-  if (score === 1) return "#BFD5D8";
-  return "#E5E7EB";
+  if (score === 4) return "#5C7393";
+  if (score === 3) return "#7E97AF";
+  if (score === 2) return "#A7BDC4";
+  if (score === 1) return "#C9D7DB";
+  return "#E7ECEF";
 }
 
 function scoreFill(score: number) {
-  if (score === 4) return "#4E6A8C";
-  if (score === 3) return "#6F879F";
-  if (score === 2) return "#8FB9BE";
-  if (score === 1) return "#BFD5D8";
-  return "#E5E7EB";
+  if (score === 4) return "#5C7393";
+  if (score === 3) return "#7E97AF";
+  if (score === 2) return "#A7BDC4";
+  if (score === 1) return "#C9D7DB";
+  return "#E7ECEF";
 }
 
 function Card({
@@ -125,14 +125,8 @@ export default function AboutPage() {
 
     const pattern = jitterPattern[count % jitterPattern.length];
 
-    const plotAutomation = Math.max(
-      0,
-      Math.min(4, Number((item.automation + pattern.dx).toFixed(2)))
-    );
-    const plotAgency = Math.max(
-      0,
-      Math.min(4, Number((item.agency + pattern.dy).toFixed(2)))
-    );
+    const plotAutomation = Number((item.automation + pattern.dx).toFixed(2));
+    const plotAgency = Number((item.agency + pattern.dy).toFixed(2));
 
     return {
       ...item,
@@ -165,6 +159,15 @@ export default function AboutPage() {
       score4: counts[4],
     };
   });
+
+  const academicBarFills = [
+    "#7389A3",
+    "#8298AF",
+    "#91A8B8",
+    "#9EB6C1",
+    "#A9B1C9",
+    "#B7BCC8",
+  ];
 
   return (
     <main className="min-h-screen bg-[#F5F5F5] text-[#1F2937]">
@@ -276,24 +279,14 @@ export default function AboutPage() {
                   <Bar
                     dataKey="total"
                     name="Total Coded Presence"
-                    radius={[6, 6, 0, 0]}
+                    radius={[10, 10, 0, 0]}
                   >
-                    {academicGroupCoverage.map((entry, index) => {
-                      const fills = [
-                        "#6F879F",
-                        "#8AA2B7",
-                        "#8FB9BE",
-                        "#A3B3C7",
-                        "#B0A5CB",
-                        "#C1C4CC",
-                      ];
-                      return (
-                        <Cell
-                          key={index}
-                          fill={fills[index % fills.length]}
-                        />
-                      );
-                    })}
+                    {academicGroupCoverage.map((entry, index) => (
+                      <Cell
+                        key={index}
+                        fill={academicBarFills[index % academicBarFills.length]}
+                      />
+                    ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -304,13 +297,13 @@ export default function AboutPage() {
             title="Commercial Automation–Agency Trade-off"
             description="Automation is shown on the x-axis and agency on the y-axis. Point size represents narration support, and point color represents accuracy."
           >
-            <div className="mb-3 flex flex-wrap items-center gap-4 text-[12px] text-slate-600">
+            <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-slate-600">
               <div className="flex items-center gap-2">
-                <span className="inline-block h-3 w-3 rounded-full bg-[#4E6A8C]" />
+                <span className="inline-block h-3.5 w-3.5 rounded-full bg-[#5C7393]" />
                 <span>Higher accuracy</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="inline-block h-3 w-3 rounded-full bg-[#BFD5D8]" />
+                <span className="inline-block h-3.5 w-3.5 rounded-full bg-[#C9D7DB]" />
                 <span>Lower accuracy</span>
               </div>
               <div className="flex items-center gap-2">
@@ -318,7 +311,7 @@ export default function AboutPage() {
                 <span>Smaller point = lower narration</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="inline-block h-4.5 w-4.5 rounded-full border border-slate-400" />
+                <span className="inline-block h-5 w-5 rounded-full border border-slate-400" />
                 <span>Larger point = higher narration</span>
               </div>
             </div>
@@ -326,16 +319,15 @@ export default function AboutPage() {
             <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart
-                  margin={{ top: 10, right: 10, bottom: 10, left: 0 }}
+                  margin={{ top: 20, right: 20, bottom: 20, left: 10 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis
                     type="number"
                     dataKey="plotAutomation"
                     name="Automation"
-                    domain={[0, 4]}
+                    domain={[-0.1, 4.1]}
                     ticks={[0, 1, 2, 3, 4]}
-                    allowDataOverflow
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#CBD5E1" }}
                     tickLine={{ stroke: "#CBD5E1" }}
@@ -344,9 +336,8 @@ export default function AboutPage() {
                     type="number"
                     dataKey="plotAgency"
                     name="Agency"
-                    domain={[0, 4]}
+                    domain={[-0.1, 4.1]}
                     ticks={[0, 1, 2, 3, 4]}
-                    allowDataOverflow
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#CBD5E1" }}
                     tickLine={{ stroke: "#CBD5E1" }}
